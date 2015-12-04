@@ -1,6 +1,7 @@
+{-# LANGUAGE MagicHash #-}
 module Geometry.Point where
 
-data Point = Point Double Double deriving (Eq, Ord, Read, Show)
+data Point = Point {-# UNPACK #-} !Double {-# UNPACK #-} !Double deriving (Eq, Ord, Read, Show)
 
 type Vector = Point
 

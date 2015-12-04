@@ -1,5 +1,6 @@
 module Geometry.Visibility where
 
+import Common
 import Geometry.Point
 import Geometry.Polygon
 import Data.List (sortBy, minimumBy)
@@ -15,12 +16,13 @@ visibilityPolygon start poly = Simple cont
 
 intersect :: Point -> Vector -> Segment -> Maybe Point
 intersect p r (Segment q q')
-    | t <= 0           = Nothing
-    | u >= 0 && u <= 1 = Just (q + u `scale` s)
-    | otherwise        = Nothing
+    | t < -eps                  = Nothing
+    | u >= -eps && u <= 1 + eps = Just (q + u `scale` s)
+    | otherwise                 = Nothing
     where s = q `vecTo` q'
           t = ((q - p) `cross` s) / (r `cross` s)
           u = ((p - q) `cross` r) / (s `cross` r)
+
 
 rayCast :: Point -> Vector -> Polygon -> Point
 rayCast start dir (Polygon outer holes) = minimumBy (comparing (sqrDist start)) inters

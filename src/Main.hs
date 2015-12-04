@@ -3,6 +3,9 @@ module Main where
 import Geometry
 import Domain.Sample
 import Domain.Coverage
+import Domain.Types
+import Domain.Parse
+import Control.Monad
 import Visualization
 
 -- visPoly :: Double -> Double -> SimplePolygon
@@ -22,10 +25,13 @@ import Visualization
 --     where indexedFrames = zip animation [(1 :: Int)..]
 --           render diag i = Rast.renderRasterific ("out/frame" ++ show i ++ ".png") (Diag.mkHeight 400) diag
 
+debug :: IO ()
+debug = do
+    poly <- polygonFromFile  "agp2009a-simplerand\\randsimple-20-1.pol"
+    let gal = ArtGallery (Polygon poly [])
+        att = initialAttempt gal
+    print $ evaluateCoverage att
+    renderAttempt att "debug.png"
+
 main :: IO ()
-main = do
-    let poly1 = Polygon ( Simple [Point 0 2, Point 4 2, Point 4 6, Point 0 6] )
-                        [ Simple [Point 1 3, Point 3 3, Point 3 5, Point 1 5] ]
-        poly2 = Polygon ( Simple [Point 2 0, Point 6 0, Point 6 4, Point 2 4] )
-                        [ Simple [Point 3 1, Point 5 1, Point 5 3, Point 3 3] ]
-    print $ unionArea [poly1, poly2]
+main = print $ evaluateCoverage (initialAttempt sampleGallery)

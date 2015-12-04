@@ -18,6 +18,10 @@ pointToP2 (Point x y) = Diag.p2 (x, y)
 locate :: P2 Double -> Located (P2 Double)
 locate p = p `Diag.at` Diag.p2 (0, 0)
 
+drawPoint :: Point -> Diagram Rasterific
+drawPoint (Point x y) = Diag.circle 0.1 # Diag.translate (Diag.r2 (x, y))
+                                      # Diag.fc Color.red
+
 drawPolygon :: Polygon -> Diagram Rasterific
 drawPolygon (Polygon outer holes) = mconcat $ reverse $ drawSimplePolygon outer Color.black
                                                       : map (`drawSimplePolygon` Color.white) holes
@@ -38,3 +42,11 @@ drawAttempt (Attempt cfg ag) = visDiags `mappend` drawPolygon (coerce ag)
 
 renderAttempt :: Attempt -> FilePath -> IO ()
 renderAttempt att path = Rast.renderRasterific path (Diag.mkHeight 400) $ drawAttempt att
+
+debugDiagram :: Diagram Rasterific -> IO ()
+debugDiagram = Rast.renderRasterific "debug.png" (Diag.mkHeight 400)
+
+debugAttempt :: Attempt -> IO ()
+debugAttempt (Attempt conf gal) = debugDiagram $ dots `Diag.atop` baseDiag
+    where baseDiag = drawPolygon $ coerce gal
+          dots     = mconcat $ map drawPoint (coerce conf)

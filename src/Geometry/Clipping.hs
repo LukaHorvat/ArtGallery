@@ -17,7 +17,7 @@ foreign import ccall "wrapper.cpp PointInPoly"
     pointInPolyPtr :: Ptr CLLong -> CInt -> CLLong -> CLLong -> IO CInt
 
 unionAreaRaw :: [[Int64]] -> Double
-unionAreaRaw polys = coerce longRes / 2 ** 20
+unionAreaRaw polys = coerce longRes / 2 ** 60
     where numPolys = fromIntegral $ length polys
           sizes    = map ((`div` 2) . fromIntegral . length) polys
           buffer   = coerce $ concat polys
@@ -34,7 +34,7 @@ pointInPolyRaw poly x y = fromIntegral $ unsafePerformIO $
 type IsHole = Bool
 
 pointToInts :: Point -> [Int64]
-pointToInts (Point x y) = map round [x * 2 ** 10, y * 2 ** 10]
+pointToInts (Point x y) = map round [x * 2 ** 30, y * 2 ** 30]
 
 simpleToInts :: IsHole -> SimplePolygon -> [Int64]
 simpleToInts isHole (Simple pts) = concatMap pointToInts pts'
