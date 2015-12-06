@@ -7,6 +7,9 @@ import Domain.Types
 import Domain.Parse
 import Control.Monad
 import Visualization
+import Algorithm.Sample
+import Control.Monad.Random
+import Algorithm.Genetic
 
 -- visPoly :: Double -> Double -> SimplePolygon
 -- visPoly x y = visibilityPolygon (Point x y) polyStar
@@ -34,4 +37,6 @@ debug = do
     renderAttempt att "debug.png"
 
 main :: IO ()
-main = print $ evaluateCoverage (initialAttempt sampleGallery)
+main = do
+    res <- evalRandIO $ runNGenerations 1000 setup
+    print $ last res
