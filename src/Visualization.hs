@@ -19,7 +19,7 @@ locate :: P2 Double -> Located (P2 Double)
 locate p = p `Diag.at` Diag.p2 (0, 0)
 
 drawPoint :: Point -> Diagram Rasterific
-drawPoint (Point x y) = Diag.circle 0.1 # Diag.translate (Diag.r2 (x, y))
+drawPoint (Point x y) = Diag.circle 0.05 # Diag.translate (Diag.r2 (x, y))
                                       # Diag.fc Color.red
 
 drawPolygon :: Polygon -> Diagram Rasterific
@@ -36,9 +36,10 @@ drawSimplePolygon (Simple pts) col =
           first   = head pts # \(Point x y) -> Diag.r2 (x, y)
 
 drawAttempt :: Attempt -> Diagram Rasterific
-drawAttempt (Attempt cfg ag) = visDiags `mappend` drawPolygon (coerce ag)
+drawAttempt (Attempt cfg ag) = cams `mappend` visDiags `mappend` drawPolygon (coerce ag)
     where visPolys = map (\pt -> visibilityPolygon pt (coerce ag)) (coerce cfg)
           visDiags = mconcat $ map (`drawSimplePolygon` withOpacity Color.yellow 0.1) visPolys
+          cams     = mconcat $ map drawPoint (coerce cfg)
 
 renderAttempt :: Attempt -> FilePath -> IO ()
 renderAttempt att path = Rast.renderRasterific path (Diag.mkHeight 400) $ drawAttempt att

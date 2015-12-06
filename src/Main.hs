@@ -10,6 +10,9 @@ import Visualization
 import Algorithm.Sample
 import Control.Monad.Random
 import Algorithm.Genetic
+import Data.Coerce
+import System.Environment
+import Data.List.Split
 
 -- visPoly :: Double -> Double -> SimplePolygon
 -- visPoly x y = visibilityPolygon (Point x y) polyStar
@@ -36,7 +39,21 @@ debug = do
     print $ evaluateCoverage att
     renderAttempt att "debug.png"
 
+-- main :: IO ()
+-- main = do
+--     res <- evalRandIO $ runNGenerations 1000 setup
+--     print $ last res
+
 main :: IO ()
 main = do
-    res <- evalRandIO $ runNGenerations 1000 setup
-    print $ last res
+    args <- getArgs
+    case args of
+        [gal, cams, out] -> draw gal cams out
+        _           -> print "Usage: ./ArtGallery [polygon file] [camera file] [output file]"
+
+draw :: FilePath -> FilePath -> FilePath -> IO ()
+draw galPath camsPath outPath = do
+    poly <- polygonFromFile galPath
+    ptsString <- readFile camsPath
+    let points = map (\[x, y] -> Point x y) $ chunksOf 2 $ map read $ words ptsString
+    renderAttempt (Attempt (coerce points) (ArtGallery (Polygon poly []))) outPath
