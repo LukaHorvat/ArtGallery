@@ -1,9 +1,11 @@
-{-# LANGUAGE RecordWildCards, BangPatterns #-}
+{-# LANGUAGE RecordWildCards #-}
 module Algorithm.Genetic where
 
 import Control.Monad
+import Control.Monad.Trans
 import Data.Ord
 import Data.List
+import Data.Conduit
 
 data Environment m a = Environment { initial  :: m [a]
                                    , mutate   :: a -> m a
@@ -18,12 +20,6 @@ instance Ord (Evaluated a) where
 
 instance Eq (Evaluated a) where
     a == b = compare a b == EQ
-    
-iterateM :: Monad m => Int -> (a -> m a) -> a -> m [a]
-iterateM 0  _   _        = return []
-iterateM n next !current = do
-    x <- next current
-    (current :) <$> iterateM (n - 1) next x
 
 evaluate' :: Monad m => (a -> m Double) -> a -> m (Evaluated a)
 evaluate' eval x = (`Evaluated` x) <$> eval x
@@ -36,8 +32,13 @@ advance Environment{..} gen = do
     where sorted = sortBy (flip compare) gen
           top10  = map unit $ take 10 sorted
 
-runNGenerations :: Monad m => Int -> Environment m a -> m [[a]]
-runNGenerations n env@Environment{..} = do
-    gen <- initial
-    evals <- forM gen $ \x -> (`Evaluated` x) <$> evaluate x
-    map (map unit) <$> iterateM n (advance env) evals
+iterateM :: Monad m => (a -> m a) -> a -> Source m a
+iterateM f x = do
+    yield x
+    iterateM f =<< lift (f x)
+
+runGenerations :: Monad m => Environment m a -> Source m [Evaluated a]
+runGenerations env@Environment{..} = do
+    gen   <- lift initial
+    evals <- lift $ forM gen $ \x -> (`Evaluated` x) <$> evaluate x
+    iterateM (advance env) evals

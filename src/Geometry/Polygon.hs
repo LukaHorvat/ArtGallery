@@ -16,3 +16,6 @@ segments (Simple pts) = map (uncurry Segment) pairs
 
 promoteSimplePolygon :: SimplePolygon -> Polygon
 promoteSimplePolygon sp = Polygon sp []
+
+size :: Polygon -> Int
+size (Polygon (Simple pts) holes) = length pts + sum (map (\(Simple pts) -> length pts) holes)

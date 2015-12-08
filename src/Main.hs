@@ -5,6 +5,7 @@ import Domain.Sample
 import Domain.Coverage
 import Domain.Types
 import Domain.Parse
+import Domain.Genetic
 import Control.Monad
 import Visualization
 import Algorithm.Sample
@@ -41,19 +42,25 @@ debug = do
 
 -- main :: IO ()
 -- main = do
---     res <- evalRandIO $ runNGenerations 1000 setup
+--     res <- evalRandIO $ Pipe.toListM $ Pipe.take 1000 <-< runGenerations setup
 --     print $ last res
 
 main :: IO ()
 main = do
-    args <- getArgs
-    case args of
-        [gal, cams, out] -> draw gal cams out
-        _           -> print "Usage: ./ArtGallery [polygon file] [camera file] [output file]"
+    poly <- polygonFromFile "agp2009a-simplerand\\randsimple-40-30.pol"
+    let ag = ArtGallery (Polygon poly [])
+    runRandIO $ runGallery ag
 
-draw :: FilePath -> FilePath -> FilePath -> IO ()
-draw galPath camsPath outPath = do
-    poly <- polygonFromFile galPath
-    ptsString <- readFile camsPath
-    let points = map (\[x, y] -> Point x y) $ chunksOf 2 $ map read $ words ptsString
-    renderAttempt (Attempt (coerce points) (ArtGallery (Polygon poly []))) outPath
+-- main :: IO ()
+-- main = do
+--     args <- getArgs
+--     case args of
+--         [gal, cams, out] -> draw gal cams out
+--         _           -> print "Usag   e: ./ArtGallery [polygon file] [camera file] [output file]"
+--
+-- draw :: FilePath -> FilePath -> FilePath -> IO ()
+-- draw galPath camsPath outPath = do
+--     poly <- polygonFromFile galPath
+--     ptsString <- readFile camsPath
+--     let points = map (\[x, y] -> Point x y) $ chunksOf 2 $ map read $ words ptsString
+--     renderAttempt (Attempt (coerce points) (ArtGallery (Polygon poly []))) outPath

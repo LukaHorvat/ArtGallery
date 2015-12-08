@@ -16,3 +16,4 @@ cabal.sandbox.config
 .stack-work/
 *.pol
 agp2009a-simplerand/
+out/
