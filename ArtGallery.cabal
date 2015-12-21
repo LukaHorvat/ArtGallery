@@ -35,4 +35,4 @@ executable ArtGallery
   ghc-options:         -O2
                        -auto-all
                        -rtsopts
---                       "-with-rtsopts=-p"
+                       -with-rtsopts=-p

@@ -47,7 +47,7 @@ debug = do
 
 main :: IO ()
 main = do
-    poly <- polygonFromFile "agp2009a-simplerand\\randsimple-40-30.pol"
+    poly <- polygonFromFile "agp2009a-simplerand\\randsimple-60-1.pol"
     let ag = ArtGallery (Polygon poly [])
     runRandIO $ runGallery ag
 
