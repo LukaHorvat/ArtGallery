@@ -21,6 +21,9 @@ instance Show Loop where
 loopSeg :: Loop -> Segment
 loopSeg (Loop (s :> _)) = s
 
+loopPoint :: Loop -> Point
+loopPoint = startPoint . loopSeg
+
 streamToLoops :: Stream Segment -> [Loop]
 streamToLoops (x :> xs) = Loop (x :> xs) : streamToLoops xs
 
@@ -108,7 +111,7 @@ traversePoly lastAng cam (pt, loop) ladders slides
                 Just lad -> pt : traversePoly ang cam lad ladders slides
                 Nothing  -> pt : traversePoly ang cam (nextPointLoop loop) ladders slides
     where ang = polarAngle cam pt
-          slide sli = pt : land : traversePoly ang cam (nextPointLoop nextLoop) ladders slides
+          slide sli = pt : land : traversePoly ang cam (loopPoint nextLoop, nextLoop) ladders slides
               where (land, nextLoop) = minimumBy (compareRelative ang `on` toAng) sli
                     toAng (pt', _) = polarAngle cam pt'
 
