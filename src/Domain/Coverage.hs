@@ -24,7 +24,7 @@ generateVisibilities (Attempt att (ArtGallery ag)) = map (`visibilityPolygon` ag
 
 evaluateCoverage :: Attempt -> Double
 evaluateCoverage att@(Attempt _ (ArtGallery ag))
-    | rounded > 1 = error $ "Visible area (" ++ show coveredArea
+    | rounded > 1.5 = error $ "Visible area (" ++ show coveredArea
                          ++ ") greater than total area (" ++ show galleryArea ++ ")"
     | otherwise = rounded
     where coveredArea = unionArea $ map promoteSimplePolygon $ generateVisibilities att

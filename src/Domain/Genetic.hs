@@ -83,4 +83,4 @@ optimize cams ag conf = do
         runGenerations env =$= logger ag $$ Cond.find ((>= 0.99) . fitness . head)
     renderGen ag ("sol" ++ show cams) res
     liftIO $ putStrLn "Run done"
-    -- optimize (cams - 1) ag (unit $ head res)
+    optimize (cams - 1) ag (unit $ head res)

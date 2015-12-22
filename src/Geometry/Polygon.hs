@@ -18,4 +18,10 @@ promoteSimplePolygon :: SimplePolygon -> Polygon
 promoteSimplePolygon sp = Polygon sp []
 
 size :: Polygon -> Int
-size (Polygon (Simple pts) holes) = length pts + sum (map (\(Simple pts) -> length pts) holes)
+size (Polygon (Simple pts) holes) = length pts + sum (map (\(Simple x) -> length x) holes)
+
+overSimple :: (SimplePolygon -> a) -> Polygon -> [a]
+overSimple f (Polygon outer holes) = f outer : map (f . reverseSimple) holes
+
+reverseSimple :: SimplePolygon -> SimplePolygon
+reverseSimple (Simple pts) = Simple $! reverse pts
