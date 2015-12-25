@@ -1,17 +1,16 @@
-{-# LANGUAGE TupleSections #-}
 module Geometry.Visibility where
 
 -- import Common
 import Geometry.Point
 import Geometry.Polygon
 import Geometry.Angle
-import Data.Monoid ((<>))
 import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.Maybe (mapMaybe)
 import Data.List (groupBy, sortBy)
 import Data.Ord (comparing)
 import Data.Function (on)
+-- import Debug.Trace (traceShowId, traceShow)
 
 data OrientedSegment = OrientedSegment { origin :: Point
                                        , start  :: Point
@@ -28,7 +27,10 @@ sameSide lineF pts = let xs = map lineF pts in all (>= 0) xs || all (<= 0) xs
 instance Ord OrientedSegment where
     compare (OrientedSegment orig1 s1 e1) (OrientedSegment orig2 s2 e2)
         | orig1 /= orig2 = error "Can't compare oriented segments with different origins"
-        | otherwise      = if line1Ord == line2Ord then EQ else line1Ord <> line2Ord
+        | line1Ord == line2Ord = EQ
+        | line2Ord == LT       = GT
+        | line2Ord == GT       = LT
+        | otherwise            = line1Ord
         where (line1, line2) = (line s1 e1, line s2 e2)
               line1Splits = sameSide line1 [s2, e2]
               line2Splits = sameSide line2 [s1, e1]
@@ -76,7 +78,8 @@ isEnd (Start _) = False
 isEnd (End _)   = True
 
 data FoldState = FoldState { activeSegments :: Set OrientedSegment
-                           , currentVerts   :: [Point] } deriving (Eq, Ord, Read, Show)
+                           , currentVerts   :: [Point]
+                           , currentLowest  :: OrientedSegment } deriving (Eq, Ord, Read, Show)
 
 eventLine :: [OrientedSegment] -> [[(Event, OrientedSegment)]]
 eventLine segs = evts
@@ -94,8 +97,8 @@ cast :: Angle -> OrientedSegment -> Point
 cast ang (OrientedSegment pt a b) = intersect pt (Point (cos' ang) (sin' ang)) (Segment a b)
 
 processEvent :: FoldState -> [(Event, OrientedSegment)] -> FoldState
-processEvent oldState evts = FoldState addNew newVerts
-    where lastLowest = Set.findMin (activeSegments oldState)
+processEvent oldState evts = FoldState addNew newVerts newLowest
+    where lastLowest = currentLowest oldState
           removeEnds = foldr (Set.delete . snd) (activeSegments oldState) $ filter (isEnd . fst) evts
           addNew     = foldr (Set.insert . snd) removeEnds $ filter (isStart . fst) evts
           newLowest  = Set.findMin addNew
@@ -105,8 +108,8 @@ processEvent oldState evts = FoldState addNew newVerts
                    | otherwise               = oldVerts
 
 visibilityPolygon :: Point -> Polygon -> SimplePolygon
-visibilityPolygon cam poly = Simple $! reverse verts
+visibilityPolygon cam poly = Simple $! reverse $! currentVerts finalState
     where segs    = orientedSegments cam poly
           initial = initialSegments segs
           evts    = eventLine segs
-          verts   = currentVerts $! foldl processEvent (FoldState initial []) evts
+          finalState = foldl processEvent (FoldState initial [] (Set.findMin initial)) evts

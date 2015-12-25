@@ -39,7 +39,8 @@ cos' (Angle x) = cos x
 data AngleSpan = AngleSpan !Angle !Angle deriving (Eq, Show, Read)
 
 mkAngle :: Double -> Angle
-mkAngle = Angle . (`mod'` (2 * pi))
+mkAngle ang | ang >= 0 && ang < 2 * pi = Angle ang
+            | otherwise                = Angle $! ang `mod'` (2 * pi)
 
 angleInSpan :: Angle -> AngleSpan -> Bool
 angleInSpan ang (AngleSpan first second) =

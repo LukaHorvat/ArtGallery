@@ -48,7 +48,7 @@ debug = do
 
 main :: IO ()
 main = do
-    poly <- polygonFromFile "agp2009a-simplerand\\randsimple-100-1.pol"
+    poly <- polygonFromFile "agp2009a-simplerand\\randsimple-60-1.pol"
     -- let poly = testPoly
     let ag = ArtGallery (Polygon poly [])
     runRandIO $ runGallery ag
@@ -77,7 +77,7 @@ poly = Polygon testPoly []
 -- testCorners :: [(Corner, Loop)]
 -- testCorners = simpleCorners (Point 0 0) testPoly
 --
--- cam = Point 0 0
+cam = Point 9.998195547788065 5.000747428578838
 -- loops   = simpleLoops testPoly
 -- toTriple loop = let p = startPoint $ loopSeg loop in ((p, loop), polarAngle cam p)
 -- angled  = map toTriple loops
