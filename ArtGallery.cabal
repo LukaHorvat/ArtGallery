@@ -16,7 +16,23 @@ cabal-version:       >=1.10
 
 executable ArtGallery
   main-is:             Main.hs
-  -- other-modules:
+  other-modules:       Algorithm.Genetic
+                     , Algorithm.Sample
+                     , Common
+                     , Domain.Coverage
+                     , Domain.Genetic
+                     , Domain.Initial
+                     , Domain.Parse
+                     , Domain.Sample
+                     , Domain.Types
+                     , Geometry
+                     , Geometry.Angle
+                     , Geometry.Clipping
+                     , Geometry.Point
+                     , Geometry.Polygon
+                     , Geometry.Visibility
+                     , Stream
+                     , Visualization
   -- other-extensions:
   build-depends:       base >=4.8 && <4.9
                      , diagrams-lib        == 1.3.*
@@ -33,7 +49,7 @@ executable ArtGallery
   default-language:    Haskell2010
   extra-lib-dirs:      .
   extra-libraries:     clipper
-  ghc-options:         -O2
+  ghc-options:         -O3
                        -auto-all
                        -rtsopts
                        -Wall

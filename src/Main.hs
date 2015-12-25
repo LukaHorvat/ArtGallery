@@ -48,8 +48,8 @@ debug = do
 
 main :: IO ()
 main = do
-    -- poly <- polygonFromFile "agp2009a-simplerand\\randsimple-60-1.pol"
-    let poly = testPoly
+    poly <- polygonFromFile "agp2009a-simplerand\\randsimple-100-1.pol"
+    -- let poly = testPoly
     let ag = ArtGallery (Polygon poly [])
     runRandIO $ runGallery ag
 
@@ -74,15 +74,15 @@ testPoly = Simple [Point 10 0, Point 5 5, Point 10 5, Point 5 10, Point (-5) 0, 
 poly :: Polygon
 poly = Polygon testPoly []
 
-testCorners :: [(Corner, Loop)]
-testCorners = simpleCorners (Point 0 0) testPoly
-
-cam = Point 0 0
-loops   = simpleLoops testPoly
-toTriple loop = let p = startPoint $ loopSeg loop in ((p, loop), polarAngle cam p)
-angled  = map toTriple loops
-windows = slidingWindow 3 $ last angled : angled ++ [head angled]
-ordered [x, y, z] = x `cwFrom` y && y `cwFrom` z || x `ccwFrom` y && y `ccwFrom` z
-middle [(_, ax), ((pt, loop), ay), _]
-    | ax `cwFrom` ay = (ToCCW pt, loop)
-    | otherwise      = (ToCW  pt, loop)
+-- testCorners :: [(Corner, Loop)]
+-- testCorners = simpleCorners (Point 0 0) testPoly
+--
+-- cam = Point 0 0
+-- loops   = simpleLoops testPoly
+-- toTriple loop = let p = startPoint $ loopSeg loop in ((p, loop), polarAngle cam p)
+-- angled  = map toTriple loops
+-- windows = slidingWindow 3 $ last angled : angled ++ [head angled]
+-- ordered [x, y, z] = x `cwFrom` y && y `cwFrom` z || x `ccwFrom` y && y `ccwFrom` z
+-- middle [(_, ax), ((pt, loop), ay), _]
+--     | ax `cwFrom` ay = (ToCCW pt, loop)
+--     | otherwise      = (ToCW  pt, loop)

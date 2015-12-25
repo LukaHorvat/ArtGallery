@@ -1,122 +1,112 @@
 {-# LANGUAGE TupleSections #-}
 module Geometry.Visibility where
 
-import Common
+-- import Common
 import Geometry.Point
 import Geometry.Polygon
 import Geometry.Angle
-import Data.List (minimumBy)
-import Data.Ord
+import Data.Monoid ((<>))
+import Data.Set (Set)
+import qualified Data.Set as Set
 import Data.Maybe (mapMaybe)
+import Data.List (groupBy, sortBy)
+import Data.Ord (comparing)
 import Data.Function (on)
-import Stream
-import Data.Map (Map)
-import qualified Data.Map as Map
 
-newtype Loop = Loop (Stream Segment)
+data OrientedSegment = OrientedSegment { origin :: Point
+                                       , start  :: Point
+                                       , end    :: Point } deriving (Read, Show, Eq)
 
-instance Show Loop where
-    show _ = "Loop"
+line :: Point -> Point -> Point -> Double
+line (Point x1 y1) (Point x2 y2)
+    | x1 == x2  = \(Point x _) -> x - x1
+    | otherwise = \(Point x y) -> y - y1 - (y2 - y1) * (x - x1) / (x2 - x1)
 
-loopSeg :: Loop -> Segment
-loopSeg (Loop (s :> _)) = s
+sameSide :: (Point -> Double) -> [Point] -> Bool
+sameSide lineF pts = let xs = map lineF pts in all (>= 0) xs || all (<= 0) xs
 
-loopPoint :: Loop -> Point
-loopPoint = startPoint . loopSeg
+instance Ord OrientedSegment where
+    compare (OrientedSegment orig1 s1 e1) (OrientedSegment orig2 s2 e2)
+        | orig1 /= orig2 = error "Can't compare oriented segments with different origins"
+        | otherwise      = if line1Ord == line2Ord then EQ else line1Ord <> line2Ord
+        where (line1, line2) = (line s1 e1, line s2 e2)
+              line1Splits = sameSide line1 [s2, e2]
+              line2Splits = sameSide line2 [s1, e1]
+              line1Ord | not line1Splits                = EQ
+                       | sameSide line1 [orig1, s2, e2] = GT
+                       | otherwise                      = LT
+              line2Ord | not line2Splits                = EQ
+                       | sameSide line2 [orig1, s1, e1] = GT
+                       | otherwise                      = LT
 
-streamToLoops :: Stream Segment -> [Loop]
-streamToLoops (x :> xs) = Loop (x :> xs) : streamToLoops xs
+orient :: Point -> Segment -> Maybe OrientedSegment
+orient pt (Segment a b)
+    | a1 == a2        = Nothing
+    | a1 `ccwFrom` a2 = Just $! OrientedSegment pt b a
+    | otherwise       = Just $! OrientedSegment pt a b
+    where a1 = polarAngle pt a
+          a2 = polarAngle pt b
 
-simpleLoops :: SimplePolygon -> [Loop]
-simpleLoops (Simple pts) = take len $ streamToLoops $ cycleList segs
-    where segs = map (\[x, y] -> Segment x y) $ slidingWindow 2 $ pts ++ [head pts]
-          len  = length pts
+orientedSegments :: Point -> Polygon -> [OrientedSegment]
+orientedSegments cam (Polygon outer holes) =
+    mapMaybe (orient cam) $ segments outer ++ concatMap segments holes
 
-data Corner = ToCW Point | ToCCW Point deriving (Eq, Ord, Read, Show)
+intersectsRightRay :: OrientedSegment -> Bool
+intersectsRightRay (OrientedSegment (Point x y) (Point x1 y1) (Point x2 y2))
+    | not (y1 <= y && y2 >= y || y1 >= y && y2 <= y) = False
+    | x1 == x2 = x1 >= x && y1 <= y && y2 >= y
+    | y1 == y2 = x1 >= x && x2 >= x && y1 == y
+    | otherwise = (x1 * y - x1 * y2 - x2 * y + x2 * y1) / (y1 - y2) >= x
 
-startPoint :: Segment -> Point
-startPoint (Segment x _) = x
+initialSegments :: [OrientedSegment] -> Set OrientedSegment
+initialSegments segs = Set.fromList $ filter intersectsRightRay segs
 
-simpleCorners :: Point -> SimplePolygon -> [(Corner, Loop)]
-simpleCorners cam poly = map middle $ filter (not . ordered . map snd) windows
-    where loops   = simpleLoops poly
-          toTriple loop = let p = startPoint $ loopSeg loop in ((p, loop), polarAngle cam p)
-          angled  = map toTriple loops
-          windows = slidingWindow 3 $ last angled : angled ++ [head angled]
-          ordered [x, y, z] = x `cwFrom` y && y `cwFrom` z || x `ccwFrom` y && y `ccwFrom` z
-          ordered _         = error "slidingWindow 3 produces a list that isn't 3 long"
-          middle [(_, ax), ((pt, loop), ay), _]
-              | ax `cwFrom` ay = (ToCCW pt, loop)
-              | otherwise      = (ToCW  pt, loop)
-          middle _          = error "error in middle"
+data Event = Start Angle | End Angle deriving (Eq, Ord, Read, Show)
 
-corners :: Point -> Polygon -> [(Corner, Loop)]
-corners cam = concat . overSimple (simpleCorners cam)
+eventAngle :: Event -> Angle
+eventAngle (Start a) = a
+eventAngle (End a)   = a
 
-polygonLoops :: Polygon -> [Loop]
-polygonLoops = concat . overSimple simpleLoops
+isStart :: Event -> Bool
+isStart (Start _) = True
+isStart (End _)   = False
 
-intersect :: Point -> Vector -> Segment -> Maybe Point
-intersect p r (Segment q q')
-    | t < -eps                  = Nothing
-    | u >= -eps && u <= 1 + eps = Just (q + u `scale` s)
-    | otherwise                 = Nothing
+isEnd :: Event -> Bool
+isEnd (Start _) = False
+isEnd (End _)   = True
+
+data FoldState = FoldState { activeSegments :: Set OrientedSegment
+                           , currentVerts   :: [Point] } deriving (Eq, Ord, Read, Show)
+
+eventLine :: [OrientedSegment] -> [[(Event, OrientedSegment)]]
+eventLine segs = evts
+    where evts = groupBy ((==) `on` (eventAngle . fst))
+               $ sortBy (comparing (eventAngle . fst))
+               $ concatMap enqueue segs
+          enqueue seg@(OrientedSegment cam s e) = [ (Start (polarAngle cam s), seg)
+                                                  , (End   (polarAngle cam e), seg) ]
+intersect :: Point -> Vector -> Segment -> Point
+intersect p r (Segment q q') = q + u `scale` s
     where s = q `vecTo` q'
-          t = ((q - p) `cross` s) / (r `cross` s)
           u = ((p - q) `cross` r) / (s `cross` r)
 
-rayCast :: Point -> Vector -> [Loop] -> (Point, Loop)
-rayCast start dir loops = minimumBy (comparing (sqrDist start . fst)) inters
-    where inters = mapMaybe tryLoop loops
-          tryLoop loop = (, loop) <$> intersect start dir (loopSeg loop)
+cast :: Angle -> OrientedSegment -> Point
+cast ang (OrientedSegment pt a b) = intersect pt (Point (cos' ang) (sin' ang)) (Segment a b)
 
-validCast :: Point -> Vector -> (Point, Loop) -> Bool
-validCast start dir (pt, _) = sqrDist start pt > sqrMag dir
-
-type Ladders = Map Point (Point, Loop)
-type Slides  = Map Segment [(Point, Loop)]
-
-addSlide :: Segment -> (Point, Loop) -> Slides -> Slides
-addSlide seg cast = Map.alter ins seg
-    where ins Nothing  = Just [cast]
-          ins (Just l) = Just (cast : l)
-
-addRay :: Point -> [Loop] -> Ladders -> Slides
-       -> (Corner, Loop) -> (Ladders, Slides)
-addRay cam loops ladders slides (ToCCW pt, _)
-    | validCast cam dir cast = (Map.insert pt cast ladders, slides)
-    | otherwise = (ladders, slides)
-    where dir  = rotate (cam `vecTo` pt) 0.0001
-          cast = rayCast cam dir loops
-addRay cam loops ladders slides (ToCW pt, contLoop)
-    | validCast cam dir cast = (ladders, addSlide (loopSeg startLoop) (pt', contLoop) slides)
-    | otherwise = (ladders, slides)
-    where dir  = rotate (cam `vecTo` pt) (-0.0001)
-          cast@(pt', startLoop) = rayCast cam dir loops
-
-makeRayMaps :: Point -> Polygon -> (Ladders, Slides)
-makeRayMaps cam poly = foldl (uncurry $ addRay cam loops) (Map.empty, Map.empty) $ corners cam poly
-    where loops = polygonLoops poly
-
-nextPointLoop :: Loop -> (Point, Loop)
-nextPointLoop (Loop (_ :> segs@(Segment p _ :> _))) = (p, Loop segs)
-
-traversePoly :: Angle -> Point -> (Point, Loop) -> Ladders -> Slides -> [Point]
-traversePoly lastAng cam (pt, loop) ladders slides
-    | lastAng > ang = []
-    | otherwise     =
-        case Map.lookup (loopSeg loop) slides of
-            Just sli -> slide sli
-            Nothing -> case Map.lookup pt ladders of
-                Just lad -> pt : traversePoly ang cam lad ladders slides
-                Nothing  -> pt : traversePoly ang cam (nextPointLoop loop) ladders slides
-    where ang = polarAngle cam pt
-          slide sli = pt : land : traversePoly ang cam (loopPoint nextLoop, nextLoop) ladders slides
-              where (land, nextLoop) = minimumBy (compareRelative ang `on` toAng) sli
-                    toAng (pt', _) = polarAngle cam pt'
+processEvent :: FoldState -> [(Event, OrientedSegment)] -> FoldState
+processEvent oldState evts = FoldState addNew newVerts
+    where lastLowest = Set.findMin (activeSegments oldState)
+          removeEnds = foldr (Set.delete . snd) (activeSegments oldState) $ filter (isEnd . fst) evts
+          addNew     = foldr (Set.insert . snd) removeEnds $ filter (isStart . fst) evts
+          newLowest  = Set.findMin addNew
+          oldVerts   = currentVerts oldState
+          angle      = eventAngle $ fst $ head evts
+          newVerts | lastLowest /= newLowest = cast angle newLowest : cast angle lastLowest : oldVerts
+                   | otherwise               = oldVerts
 
 visibilityPolygon :: Point -> Polygon -> SimplePolygon
-visibilityPolygon start poly = Simple $! traversePoly 0 start right ladders slides
-    where (ladders, slides) = makeRayMaps start poly
-          loops = polygonLoops poly
-          right = rayCast start (Point 1 0) loops
+visibilityPolygon cam poly = Simple $! reverse verts
+    where segs    = orientedSegments cam poly
+          initial = initialSegments segs
+          evts    = eventLine segs
+          verts   = currentVerts $! foldl processEvent (FoldState initial []) evts
