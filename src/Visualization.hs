@@ -1,14 +1,12 @@
 module Visualization where
 
 import Geometry
-import Domain.Sample
-import Domain.Coverage
 import Domain.Types
 import Diagrams (Diagram, P2, (#), Located)
 import qualified Diagrams as Diag
 import Diagrams.Backend.Rasterific (Rasterific)
 import qualified Diagrams.Backend.Rasterific as Rast
-import Data.Colour (Colour, withOpacity)
+import Data.Colour (withOpacity)
 import qualified Data.Colour.Names as Color
 import Data.Coerce
 

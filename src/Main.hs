@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-unused-imports -fno-warn-name-shadowing #-}
 module Main where
 
 import Geometry
@@ -77,6 +78,7 @@ poly = Polygon testPoly []
 -- testCorners :: [(Corner, Loop)]
 -- testCorners = simpleCorners (Point 0 0) testPoly
 --
+cam :: Point
 cam = Point 9.998195547788065 5.000747428578838
 -- loops   = simpleLoops testPoly
 -- toTriple loop = let p = startPoint $ loopSeg loop in ((p, loop), polarAngle cam p)

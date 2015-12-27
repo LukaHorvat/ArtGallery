@@ -13,4 +13,5 @@ setup = Environment { initial  = take 10 <$> Rand.getRandoms
                     , cross    = \x y -> do ex <- eval x
                                             ey <- eval y
                                             return $! (ex * x + ey * y) / (ex + ey)
-                    , evaluate = eval }
+                    , evaluate = eval
+                    , maxScore = 10000 }

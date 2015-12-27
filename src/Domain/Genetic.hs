@@ -5,16 +5,13 @@ import Algorithm.Genetic
 import Domain.Types
 import Domain.Coverage
 import Visualization
-import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Random
 import Control.Monad.State.Strict (StateT, evalStateT)
 import Control.Monad.State.Class
-import Data.List
 import Data.Coerce
 import Geometry (Point(..), size)
 import Data.Conduit
-import qualified Data.Conduit.List as Cond
 import qualified Data.Conduit.Combinators as Cond
 
 type RandIO = StateT Int (RandT StdGen IO)
@@ -78,7 +75,8 @@ optimize cams ag conf = do
         env = Environment { initial  = return confs
                           , mutate   = mutateConf
                           , cross    = crossConf
-                          , evaluate = evaluateConf ag }
+                          , evaluate = evaluateConf ag
+                          , maxScore = 100 }
     Just (res :: [Evaluated Configuration]) <-
         runGenerations env =$= logger ag $$ Cond.find ((>= 0.99) . fitness . head)
     renderGen ag ("sol" ++ show cams) res

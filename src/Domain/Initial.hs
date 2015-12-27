@@ -9,6 +9,7 @@ inwardFacingVectors hole (Simple pts) = map inward $ slidingWindow 3 loop
           inward [a, b, c] = normalize $ normalize vec1 + normalize vec2
               where vec1 = rotate (a `vecTo` b) rotAngle
                     vec2 = rotate (b `vecTo` c) rotAngle
+          inward _         = error "slidingWindow returned a list with more than 3 elements"
           rotAngle = if hole then -pi / 2 else pi / 2
 
 initialPointsSimple :: IsHole -> SimplePolygon -> [Point]

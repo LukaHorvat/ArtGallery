@@ -1,7 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 module Algorithm.Genetic where
 
-import Control.Monad
 import Control.Monad.Trans
 import Data.Ord
 import Data.List
@@ -10,9 +9,10 @@ import Data.Conduit
 data Environment m a = Environment { initial  :: m [a]
                                    , mutate   :: a -> m a
                                    , cross    :: a -> a -> m a
-                                   , evaluate :: a -> m Double }
+                                   , evaluate :: a -> m Double
+                                   , maxScore :: Double }
 
-data Evaluated a = Evaluated { fitness :: !Double
+data Evaluated a = Evaluated { fitness :: Double
                              , unit    :: !a } deriving (Read, Show)
 
 instance Ord (Evaluated a) where
@@ -37,8 +37,15 @@ iterateM f x = do
     yield x
     iterateM f =<< lift (f x)
 
+mapUntilMax :: Monad m => Double -> (a -> m (Evaluated a)) -> [a] -> m [Evaluated a]
+mapUntilMax _  _ []       = return []
+mapUntilMax mx f (x : xs) = do
+    ev@(Evaluated fit _) <- f x
+    if fit >= mx then return [ev]
+    else (ev :) <$> mapUntilMax mx f xs
+
 runGenerations :: Monad m => Environment m a -> Source m [Evaluated a]
 runGenerations env@Environment{..} = do
     gen   <- lift initial
-    evals <- lift $ forM gen $ \x -> (`Evaluated` x) <$> evaluate x
+    evals <- lift $ mapUntilMax maxScore (evaluate' evaluate) gen
     iterateM (advance env) evals
