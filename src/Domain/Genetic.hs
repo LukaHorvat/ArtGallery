@@ -1,6 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Domain.Genetic where
 
+import Common
 import Algorithm.Genetic
 import Domain.Types
 import Domain.Coverage
@@ -71,14 +72,14 @@ renderGen ag path gen = do
 
 optimize :: Int -> ArtGallery -> Configuration -> RandIO ()
 optimize cams ag conf = do
-    let confs = map Configuration $ withoutEach $ coerce conf
-        env = Environment { initial  = return confs
+    confs <- map Configuration <$> shuffle (withoutEach $ coerce conf)
+    let env = Environment { initial  = return confs
                           , mutate   = mutateConf
                           , cross    = crossConf
                           , evaluate = evaluateConf ag
-                          , maxScore = 100 }
+                          , maxScore = 1 }
     Just (res :: [Evaluated Configuration]) <-
         runGenerations env =$= logger ag $$ Cond.find ((>= 0.99) . fitness . head)
     renderGen ag ("sol" ++ show cams) res
     liftIO $ putStrLn "Run done"
-    -- optimize (cams - 1) ag (unit $ head res)
+    optimize (cams - 1) ag (unit $ head res)
