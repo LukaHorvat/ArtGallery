@@ -62,7 +62,6 @@ logger ag = do
             logger ag
         Nothing -> return ()
 
-
 renderGen :: ArtGallery -> String -> [Evaluated Configuration] -> RandIO ()
 renderGen ag path gen = do
     let maybeAtt = validate ag (unit $ maximum gen)

@@ -4,6 +4,7 @@ import Geometry
 import Domain.Types
 import Domain.Initial
 import Data.Coerce
+import Control.Parallel.Strategies
 
 initialConfiguration :: ArtGallery -> Configuration
 initialConfiguration (ArtGallery poly) = coerce $ initialPoints poly
@@ -18,7 +19,7 @@ initialAttempt :: ArtGallery -> Attempt
 initialAttempt ag = Attempt (initialConfiguration ag) ag
 
 generateVisibilities :: Attempt -> [SimplePolygon]
-generateVisibilities (Attempt att (ArtGallery ag)) = map (`visibilityPolygon` ag) (coerce att)
+generateVisibilities (Attempt att (ArtGallery ag)) = parMap rpar (`visibilityPolygon` ag) (coerce att)
 
 asInt :: Int -> Int
 asInt = id

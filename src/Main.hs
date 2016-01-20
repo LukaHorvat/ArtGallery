@@ -37,7 +37,7 @@ import Common
 debug :: IO ()
 debug = do
     poly <- polygonFromFile  "agp2009a-simplerand\\randsimple-20-1.pol"
-    let gal = ArtGallery (Polygon poly [])
+    let gal = ArtGallery poly
         att = initialAttempt gal
     print $ evaluateCoverage att
     renderAttempt att "debug.png"
@@ -49,10 +49,11 @@ debug = do
 
 main :: IO ()
 main = do
-    poly <- polygonFromFile "agp2009a-simplerand\\randsimple-200-1.pol"
-    -- let poly = testPoly
-    let ag = ArtGallery (Polygon poly [])
-    runRandIO $ runGallery ag
+    poly <- polygonFromFile "agp2009a-simplerand\\randsimple-100-1.pol"
+    cams <- camerasFromFile "agp2009a-simplerand_demo\\randsimple-100-1.pol.txt"
+    let config = coerce cams
+    let ag = ArtGallery poly
+    runRandIO $ optimize (length (coerce cams :: [Point])) ag config
 
 -- main :: IO ()
 -- main = do
