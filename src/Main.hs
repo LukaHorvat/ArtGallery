@@ -35,12 +35,33 @@ debug = do
 
 main :: IO ()
 main = do
-    poly <- polygonFromFile "./gB-simple-simple/gB_simple-simple_25_100v-10h_2.pol"
-    -- cams <- camerasFromFile "agp2009a-simplerand_demo\\randsimple-100-1.pol.txt"
-    -- let config = coerce cams
-    let ag = ArtGallery poly
-    conf <- runRandIO $ runGallery ag
-    print conf
+    args <- getArgs
+    (res, out) <- case args of
+        [gal, out] -> do
+            poly <- ArtGallery <$> polygonFromFile gal
+            res <- runRandIO $ runGallery poly
+            return (res, out)
+        [gal, cams, out] -> do
+            poly <- ArtGallery <$> polygonFromFile gal
+            cams <- camerasFromFile cams
+            res <- runRandIO $ optimize (length cams) poly (coerce cams)
+            return (res, out)
+        _ -> do
+            putStrLn "Usage: ./ArtGallery <polygon file> [starting cameras] <output file>"
+            error "Bad arguments"
+    let coords = concatMap (\(Point x y) -> [x, y]) (coerce res :: [Point])
+    writeFile out (unwords $ map show coords)
+
+--
+--
+-- main :: IO ()
+-- main = do
+--     poly <- polygonFromFile "./gB-simple-simple/gB_simple-simple_25_100v-10h_2.pol"
+--     -- cams <- camerasFromFile "agp2009a-simplerand_demo\\randsimple-100-1.pol.txt"
+--     -- let config = coerce cams
+--     let ag = ArtGallery poly
+--     conf <- runRandIO $ runGallery ag
+--     print conf
 
 -- main :: IO ()
 -- main = do

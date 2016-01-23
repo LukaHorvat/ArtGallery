@@ -80,7 +80,7 @@ logger ag = do
         Nothing -> return ()
 
 renderGen :: ArtGallery -> String -> Configuration -> RandIO ()
-renderGen ag path conf = liftIO $ renderConfiguration ag conf ("out/" ++ path ++ ".png")
+renderGen ag path conf = return () --liftIO $ renderConfiguration ag conf ("out/" ++ path ++ ".png")
 
 optimize :: Int -> ArtGallery -> Configuration -> RandIO Configuration
 optimize cams ag conf = do
@@ -96,7 +96,7 @@ optimize cams ag conf = do
                           , evaluate = evaluateConf ag
                           , maxScore = 1 }
     res :: Maybe [Evaluated Configuration] <-
-        runGenerations env =$= logger ag =$= Cond.take 100 $$ Cond.find ((>= 0.99) . fitness . head)
+        runGenerations env =$= logger ag =$= Cond.take 30 $$ Cond.find ((>= 0.99) . fitness . head)
     case res of
         Just evals -> do
             when (cams `mod` 10 == 0) $ renderGen ag ("sol" ++ show cams) (unit $ head evals)
