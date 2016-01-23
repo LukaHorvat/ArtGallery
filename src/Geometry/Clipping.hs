@@ -36,15 +36,14 @@ type IsHole = Bool
 pointToInts :: Point -> [Int64]
 pointToInts (Point x y) = map round [x * 2 ** 30, y * 2 ** 30]
 
-simpleToInts :: IsHole -> SimplePolygon -> [Int64]
-simpleToInts isHole (Simple pts) = concatMap pointToInts pts'
-    where pts' = if isHole then reverse pts else pts
+simpleToInts :: SimplePolygon -> [Int64]
+simpleToInts (Simple pts) = concatMap pointToInts pts
 
-polyToInts :: Polygon -> [[Int64]]
-polyToInts (Polygon outer holes) = simpleToInts False outer : map (simpleToInts True) holes
+unionArea :: [SimplePolygon] -> Double
+unionArea = unionAreaRaw . map simpleToInts
 
-unionArea :: [Polygon] -> Double
-unionArea = unionAreaRaw . concatMap polyToInts
+polygonArea :: Polygon -> Double
+polygonArea (Polygon outer holes) = unionArea $ outer : holes
 
 data PointPosition = Outside | Inside | OnBorder deriving (Eq, Ord, Read, Show)
 
@@ -64,7 +63,7 @@ isInSimplePoly hole pt poly
     | hole      = oppositePosition posOnPoly
     | otherwise = posOnPoly
     where [x, y] = pointToInts pt
-          posOnPoly = positionFromInt $ pointInPolyRaw (simpleToInts False poly) x y
+          posOnPoly = positionFromInt $ pointInPolyRaw (simpleToInts poly) x y
 
 isInPoly :: Point -> Polygon -> PointPosition
 isInPoly pt (Polygon outer holes)

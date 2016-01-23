@@ -18,4 +18,4 @@ initialPointsSimple hole s@(Simple pts) = zipWith (+) deltaVecs pts
 
 initialPoints :: Polygon -> [Point]
 initialPoints (Polygon outer holes) =
-    initialPointsSimple False outer ++ concatMap (initialPointsSimple True) holes
+    initialPointsSimple False outer ++ concatMap (initialPointsSimple False) holes

@@ -28,8 +28,8 @@ evaluateCoverage :: Attempt -> Double
 evaluateCoverage att@(Attempt _ (ArtGallery ag))
     | rounded > 1 = error $ "Visible area (" ++ show coveredArea
                          ++ ") greater than total area (" ++ show galleryArea ++ ")"
-    | otherwise = rounded
-    where coveredArea = unionArea $ map promoteSimplePolygon $ generateVisibilities att
-          galleryArea = unionArea [ag]
+    | otherwise   = rounded
+    where coveredArea = unionArea $ generateVisibilities att
+          galleryArea = polygonArea ag
           percentage  = coveredArea / galleryArea
           rounded     = (fromIntegral . asInt . round) (percentage * 1000) / 1000

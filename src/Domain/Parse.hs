@@ -13,7 +13,8 @@ frac :: Parser Double
 frac = do
     f <- word
     let [n :: Integer, d] = map read $ splitOn "/" f
-    return (fromIntegral n / fromIntegral d)
+    if abs (n * 100000000) < abs d then return 0
+    else return (fromIntegral n / fromIntegral d)
 
 point :: Parser Point
 point = (\[x, y] -> Point x y) <$> count 2 frac

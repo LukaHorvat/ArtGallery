@@ -28,6 +28,7 @@ drawSimplePolygon :: Diag.Color c => SimplePolygon -> c -> Diagram Rasterific
 drawSimplePolygon (Simple pts) col =
     locPath # Diag.closeLine
             # Diag.strokeLoop
+            # Diag.lineWidth Diag.ultraThin
             # Diag.fillColor col
             # Diag.translate first
     where locPath = Diag.fromVertices (map pointToP2 pts)
@@ -42,11 +43,14 @@ drawAttempt (Attempt cfg ag) = cams `mappend` visDiags `mappend` drawPolygon (co
           height = maximum ys - minimum ys
           cams   = mconcat $ map (drawPoint (height * 0.01)) (coerce cfg)
 
+renderConfiguration :: ArtGallery -> Configuration -> FilePath -> IO ()
+renderConfiguration ag conf = renderAttempt (Attempt conf ag)
+
 renderAttempt :: Attempt -> FilePath -> IO ()
-renderAttempt att path = Rast.renderRasterific path (Diag.mkHeight 400) $ drawAttempt att
+renderAttempt att path = Rast.renderRasterific path (Diag.mkHeight 300) $ drawAttempt att
 
 debugDiagram :: Diagram Rasterific -> IO ()
-debugDiagram = Rast.renderRasterific "debug.png" (Diag.mkHeight 400)
+debugDiagram = Rast.renderRasterific "debug.png" (Diag.mkHeight 300)
 
 -- debugAttempt :: Attempt -> IO ()
 -- debugAttempt (Attempt conf gal) = debugDiagram $ dots `Diag.atop` baseDiag
