@@ -1,6 +1,5 @@
 module Geometry.Visibility where
 
--- import Common
 import Geometry.Point
 import Geometry.Polygon
 import Geometry.Angle
@@ -11,10 +10,7 @@ import Data.List (groupBy, sortBy)
 import Data.Ord (comparing)
 import Data.Function (on)
 import qualified Control.Concurrent.Map as Hash
--- import qualified Data.Map.Strict as Map
 import System.IO.Unsafe
-
--- import Debug.Trace (traceShowId, traceShow)
 
 data OrientedSegment = OrientedSegment { origin :: Point
                                        , start  :: Point
