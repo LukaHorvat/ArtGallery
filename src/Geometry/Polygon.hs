@@ -1,10 +1,15 @@
+{-# LANGUAGE DeriveGeneric, DeriveAnyClass #-}
 module Geometry.Polygon where
 
 import Geometry.Point
+import GHC.Generics
+import Data.Hashable
 
 data    Segment       = Segment Point Point                   deriving (Eq, Ord, Read, Show)
-newtype SimplePolygon = Simple [Point]                        deriving (Eq, Ord, Read, Show)
-data    Polygon       = Polygon SimplePolygon [SimplePolygon] deriving (Eq, Ord, Read, Show)
+newtype SimplePolygon = Simple [Point]
+                        deriving (Eq, Ord, Read, Show, Generic, Hashable)
+data    Polygon       = Polygon SimplePolygon [SimplePolygon]
+                        deriving (Eq, Ord, Read, Show, Generic, Hashable)
 
 pairwise :: [a] -> [(a, a)]
 pairwise [] = []

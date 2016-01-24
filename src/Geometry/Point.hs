@@ -1,9 +1,12 @@
-{-# LANGUAGE MagicHash #-}
+{-# LANGUAGE MagicHash, DeriveGeneric, DeriveAnyClass #-}
 module Geometry.Point where
 
 import Geometry.Angle
+import GHC.Generics (Generic)
+import Data.Hashable
 
-data Point = Point {-# UNPACK #-} !Double {-# UNPACK #-} !Double deriving (Eq, Ord, Read, Show)
+data Point = Point {-# UNPACK #-} !Double {-# UNPACK #-} !Double
+             deriving (Eq, Ord, Read, Show, Generic, Hashable)
 
 type Vector = Point
 

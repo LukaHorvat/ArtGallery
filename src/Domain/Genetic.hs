@@ -80,11 +80,12 @@ logger ag = do
         Nothing -> return ()
 
 renderGen :: ArtGallery -> String -> Configuration -> RandIO ()
-renderGen ag path conf = return () --liftIO $ renderConfiguration ag conf ("out/" ++ path ++ ".png")
+renderGen ag path conf = liftIO $ renderConfiguration ag conf ("out/" ++ path ++ ".png")
 
 optimize :: Int -> ArtGallery -> Configuration -> RandIO Configuration
 optimize cams ag conf = do
     let toRemove = max 1 $ (cams - 200) `div` 10
+    let nowCams = cams - toRemove
     confs <- without toRemove (coerce conf :: [Camera])
              =$= Cond.map Configuration
              =$= Cond.take (cams `div` toRemove)
@@ -99,10 +100,12 @@ optimize cams ag conf = do
         runGenerations env =$= logger ag =$= Cond.take 30 $$ Cond.find ((>= 0.99) . fitness . head)
     case res of
         Just evals -> do
-            when (cams `mod` 10 == 0) $ renderGen ag ("sol" ++ show cams) (unit $ head evals)
+            let bestConf = unit (head evals)
+            when (cams `mod` 10 == 0) $ renderGen ag ("sol" ++ show nowCams) bestConf
             liftIO $ putStrLn "Run done"
-            liftIO $ putStrLn (show cams ++ " cams")
-            optimize (cams - toRemove) ag (unit $ head evals)
+            liftIO $ putStrLn (show nowCams ++ " cams")
+            if nowCams > 1 then optimize (cams - toRemove) ag bestConf
+            else return bestConf
         Nothing -> do
-            renderGen ag ("sol" ++ show cams) conf
+            renderGen ag ("sol" ++ show nowCams) conf
             return conf

@@ -36,7 +36,7 @@ drawSimplePolygon (Simple pts) col =
 
 drawAttempt :: Attempt -> Diagram Rasterific
 drawAttempt (Attempt cfg ag) = cams `mappend` visDiags `mappend` drawPolygon (coerce ag)
-    where visPolys = map (\pt -> visibilityPolygon pt (coerce ag)) (coerce cfg)
+    where visPolys = map (visibilityPolygon (coerce ag)) (coerce cfg)
           visDiags = mconcat $ map (`drawSimplePolygon` withOpacity Color.yellow 0.2) visPolys
           Polygon outer holes = coerce ag
           ys = map (\(Point _ y) -> y) $ coerce outer ++ concatMap coerce holes

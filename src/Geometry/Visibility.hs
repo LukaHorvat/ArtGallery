@@ -10,6 +10,10 @@ import Data.Maybe (mapMaybe)
 import Data.List (groupBy, sortBy)
 import Data.Ord (comparing)
 import Data.Function (on)
+import qualified Control.Concurrent.Map as Hash
+-- import qualified Data.Map.Strict as Map
+import System.IO.Unsafe
+
 -- import Debug.Trace (traceShowId, traceShow)
 
 data OrientedSegment = OrientedSegment { origin :: Point
@@ -107,9 +111,36 @@ processEvent oldState evts = FoldState addNew newVerts newLowest
           newVerts | lastLowest /= newLowest = cast angle newLowest : cast angle lastLowest : oldVerts
                    | otherwise               = oldVerts
 
-visibilityPolygon :: Point -> Polygon -> SimplePolygon
-visibilityPolygon cam poly = Simple $! reverse $! currentVerts finalState
+visibilityPolygon' :: Polygon -> Point -> SimplePolygon
+visibilityPolygon' poly cam = Simple $! reverse $! currentVerts finalState
     where segs    = orientedSegments cam poly
           initial = initialSegments segs
           evts    = eventLine segs
           finalState = foldl processEvent (FoldState initial [] (Set.findMin initial)) evts
+
+visibilityPolygon :: Polygon -> Point -> SimplePolygon
+visibilityPolygon = memoize visibilityPolygon'
+
+-- memoize :: (Polygon -> Point -> SimplePolygon) -> Polygon -> Point -> SimplePolygon
+-- memoize f = unsafePerformIO $ do
+--     r <- newIORef Map.empty
+--     return $ \x y -> unsafePerformIO $ do
+--         m <- readIORef r
+--         case Map.lookup (x, y) m of
+--             Just res -> return res
+--             Nothing  -> do
+--                 let res = f x y
+--                 writeIORef r (Map.insert (x, y) res m)
+--                 return res
+{-# NOINLINE memoize #-}
+memoize :: (Polygon -> Point -> SimplePolygon) -> Polygon -> Point -> SimplePolygon
+memoize f = unsafePerformIO $ do
+    r <- Hash.empty
+    return $ \x y -> unsafePerformIO $ do
+        m <- Hash.lookup (x, y) r
+        case m of
+            Just res -> return res
+            Nothing  -> do
+                let res = f x y
+                Hash.insert (x, y) res r
+                return res
