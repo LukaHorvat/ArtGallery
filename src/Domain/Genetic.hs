@@ -14,6 +14,7 @@ import Geometry (Point(..), size)
 import Data.Conduit
 import qualified Data.Conduit.Combinators as Cond
 import Control.Monad
+import Data.List.Split
 
 type RandIO = StateT Int (RandT StdGen IO)
 
@@ -55,8 +56,14 @@ withoutN n list len = do
     i <- getRandomR (0, len - 1)
     withoutN (n - 1) (withoutI i list) (len - 1)
 
+removeUniformly :: Int -> [a] -> Int -> [a]
+removeUniformly n list len = concatMap tail $ chunksOf ((len - 1) `div` n + 1) list
+
 without :: Int -> [a] -> Source RandIO [a]
-without n list = without' n list (length list)
+without n list = do
+    yield (removeUniformly n list len)
+    without' n list len
+    where len = length list
 
 without' :: Int -> [a] -> Int -> Source RandIO [a]
 without' n list len = do
