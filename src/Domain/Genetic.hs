@@ -71,7 +71,7 @@ without' n list len = do
     without' n list len
 
 runGallery :: ArtGallery -> RandIO Configuration
-runGallery ag@(ArtGallery poly) = optimize (size poly) ag (initialConfiguration ag)
+runGallery ag@(ArtGallery poly) = optimize (size poly) (size poly) ag (initialConfiguration ag)
 
 logger :: ArtGallery -> Conduit [Evaluated Configuration] RandIO [Evaluated Configuration]
 logger ag = do
@@ -89,9 +89,9 @@ logger ag = do
 renderGen :: ArtGallery -> String -> Configuration -> RandIO ()
 renderGen ag path conf = liftIO $ renderConfiguration ag conf ("out/" ++ path ++ ".png")
 
-optimize :: Int -> ArtGallery -> Configuration -> RandIO Configuration
-optimize cams ag conf = do
-    let toRemove = max 1 $ (cams - 200) `div` 10
+optimize :: Int -> Int -> ArtGallery -> Configuration -> RandIO Configuration
+optimize initSize cams ag conf = do
+    let toRemove = max 1 $ (cams - floor (fromIntegral initSize * (2 / 5 :: Double))) `div` 10
     let nowCams = cams - toRemove
     confs <- without toRemove (coerce conf :: [Camera])
              =$= Cond.map Configuration
@@ -111,7 +111,7 @@ optimize cams ag conf = do
             when (cams `mod` 10 == 0) $ renderGen ag ("sol" ++ show nowCams) bestConf
             liftIO $ putStrLn "Run done"
             liftIO $ putStrLn (show nowCams ++ " cams")
-            if nowCams > 1 then optimize (cams - toRemove) ag bestConf
+            if nowCams > 1 then optimize initSize (cams - toRemove) ag bestConf
             else return bestConf
         Nothing -> do
             renderGen ag ("sol" ++ show nowCams) conf

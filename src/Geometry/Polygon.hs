@@ -3,6 +3,7 @@ module Geometry.Polygon where
 
 import Geometry.Point
 import GHC.Generics
+import Data.Monoid
 import Data.Hashable
 
 data    Segment       = Segment Point Point deriving (Eq, Ord, Read, Show)
@@ -30,3 +31,12 @@ overSimple f (Polygon outer holes) = f outer : map (f . reverseSimple) holes
 
 reverseSimple :: SimplePolygon -> SimplePolygon
 reverseSimple (Simple pts) = Simple $! reverse pts
+
+data Winding = CW | CCW deriving (Eq, Ord, Read, Show)
+
+winding :: SimplePolygon -> Winding
+winding poly
+    | area >= 0 = CW
+    | otherwise = CCW
+    where area = foldMap segArea $ segments poly
+          segArea (Segment (Point x1 y1) (Point x2 y2)) = Sum ((x2 - x1) * (y2 + y1))

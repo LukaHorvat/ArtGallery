@@ -44,7 +44,7 @@ main = do
         [gal, cams, out] -> do
             poly <- ArtGallery <$> polygonFromFile gal
             cams <- camerasFromFile cams
-            res <- runRandIO $ optimize (length cams) poly (coerce cams)
+            res <- runRandIO $ optimize (size (coerce poly)) (length cams) poly (coerce cams)
             return (res, out)
         _ -> do
             putStrLn "Usage: ./ArtGallery <polygon file> [starting cameras] <output file>"
