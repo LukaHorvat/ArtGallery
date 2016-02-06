@@ -95,7 +95,7 @@ optimize initSize cams ag conf = do
     let nowCams = cams - toRemove
     confs <- without toRemove (coerce conf :: [Camera])
              =$= Cond.map Configuration
-             =$= Cond.take (cams `div` toRemove)
+             =$= Cond.take (max 10 $ cams `div` toRemove)
              $$  Cond.sinkList
 
     let env = Environment { initial  = return confs
@@ -104,15 +104,17 @@ optimize initSize cams ag conf = do
                           , evaluate = evaluateConf ag
                           , maxScore = 1 }
     res :: Maybe [Evaluated Configuration] <-
-        runGenerations env =$= logger ag =$= Cond.take 30 $$ Cond.find ((>= 0.99) . fitness . head)
+        runGenerations env =$= logger ag =$= Cond.take 100 $$ Cond.find ((>= 0.99) . fitness . head)
     case res of
         Just evals -> do
             let bestConf = unit (head evals)
-            when (cams `mod` 10 == 0) $ renderGen ag ("sol" ++ show nowCams) bestConf
+            -- when (cams `mod` 10 == 0) $ renderGen ag ("sol" ++ show nowCams) bestConf
             liftIO $ putStrLn "Run done"
             liftIO $ putStrLn (show nowCams ++ " cams")
             if nowCams > 1 then optimize initSize (cams - toRemove) ag bestConf
-            else return bestConf
+            else do
+                renderGen ag ("sol" ++ show nowCams) bestConf
+                return bestConf
         Nothing -> do
-            renderGen ag ("sol" ++ show nowCams) conf
+            renderGen ag ("sol" ++ show cams) conf
             return conf

@@ -12,17 +12,9 @@ inwardFacingVectors (Simple pts) = map inward $ slidingWindow 3 loop
           inward _         = error "slidingWindow returned a list with more than 3 elements"
           rotAngle = pi / 2
 
-initialPointsSimple :: IsHole -> SimplePolygon -> [Point]
-initialPointsSimple hole poly = zipWith (+) deltaVecs pts
+initialPointsSimple :: SimplePolygon -> [Point]
+initialPointsSimple s@(Simple pts) = zipWith (+) deltaVecs pts
     where deltaVecs = map (scale (1 / 2 ** 9)) $ inwardFacingVectors s
-          s@(Simple pts) = rewind hole poly
-
-rewind :: IsHole -> SimplePolygon -> SimplePolygon
-rewind hole poly
-    | not hole && initialWind == CW || hole && initialWind == CCW = reverseSimple poly
-    | otherwise = poly
-    where initialWind = winding poly
 
 initialPoints :: Polygon -> [Point]
-initialPoints (Polygon outer holes) =
-    initialPointsSimple False outer ++ concatMap (initialPointsSimple True) holes
+initialPoints (Polygon outer holes) = concatMap initialPointsSimple (outer : holes)

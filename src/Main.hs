@@ -19,8 +19,8 @@ import Common
 
 debug :: IO ()
 debug = do
-    poly <- polygonFromFile  "agp2009a-simplerand\\randsimple-20-1.pol"
-    let gal = ArtGallery poly
+    poly <- polygonFromFile "pol (1).txt" -- "agp2009a-simplerand\\randsimple-20-1.pol"
+    let gal = makeArtGallery poly
         att = initialAttempt gal
     print $ evaluateCoverage att
     renderAttempt att "debug.png"
@@ -38,11 +38,11 @@ main = do
     args <- getArgs
     (res, out) <- case args of
         [gal, out] -> do
-            poly <- ArtGallery <$> polygonFromFile gal
+            poly <- makeArtGallery <$> polygonFromFile gal
             res <- runRandIO $ runGallery poly
             return (res, out)
         [gal, cams, out] -> do
-            poly <- ArtGallery <$> polygonFromFile gal
+            poly <- makeArtGallery <$> polygonFromFile gal
             cams <- camerasFromFile cams
             res <- runRandIO $ optimize (size (coerce poly)) (length cams) poly (coerce cams)
             return (res, out)

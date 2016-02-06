@@ -11,6 +11,7 @@ newtype SimplePolygon = Simple [Point]
                         deriving (Eq, Ord, Read, Show, Generic, Hashable)
 data    Polygon       = Polygon SimplePolygon [SimplePolygon]
                         deriving (Eq, Ord, Read, Show, Generic, Hashable)
+type IsHole = Bool
 
 pairwise :: [a] -> [(a, a)]
 pairwise [] = []
@@ -40,3 +41,9 @@ winding poly
     | otherwise = CCW
     where area = foldMap segArea $ segments poly
           segArea (Segment (Point x1 y1) (Point x2 y2)) = Sum ((x2 - x1) * (y2 + y1))
+
+rewind :: IsHole -> SimplePolygon -> SimplePolygon
+rewind hole poly
+    | not hole && initialWind == CW || hole && initialWind == CCW = reverseSimple poly
+    | otherwise = poly
+    where initialWind = winding poly

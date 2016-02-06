@@ -31,8 +31,6 @@ pointInPolyRaw poly x y = fromIntegral $ unsafePerformIO $
     withArray (coerce poly) $ \buffPtr ->
         pointInPolyPtr buffPtr (fromIntegral $ length poly `div` 2) (coerce x) (coerce y)
 
-type IsHole = Bool
-
 pointToInts :: Point -> [Int64]
 pointToInts (Point x y) = map round [x * 2 ** 30, y * 2 ** 30]
 
