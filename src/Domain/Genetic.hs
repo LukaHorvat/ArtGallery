@@ -13,8 +13,9 @@ import Data.Coerce
 import Geometry (Point(..), size)
 import Data.Conduit
 import qualified Data.Conduit.Combinators as Cond
-import Control.Monad
-import Data.List.Split
+import Data.List
+import Data.Ord
+import Common
 
 type RandIO = StateT Int (RandT StdGen IO)
 
@@ -31,33 +32,24 @@ mutateConf conf = do
     return $! coerce $! take i points ++ [points !! i + Point dx dy] ++ drop (i + 1) points
     where points = coerce conf
 
-crossConf :: Configuration -> Configuration -> RandIO Configuration
-crossConf conf1 conf2 = do
-    i <- getRandomR (0, length pts1)
-    return $! coerce $! take i pts1 ++ drop i pts2
+crossConf :: Int -> Configuration -> Configuration -> RandIO Configuration
+crossConf numChunks conf1 conf2 = do
+    indices <- sort . take numChunks <$> getRandomRs (0, size')
+    return $! coerce $! intertwine indices pts1 pts2
     where pts1 = coerce conf1 :: [Point]
           pts2 = coerce conf2
+          size' = length pts1
 
 evaluateConf :: ArtGallery -> Configuration -> RandIO Double
 evaluateConf ag conf = case validate ag conf of
     Nothing  -> return 0
     Just att -> return $! evaluateCoverage att
 
-iterateList :: Int -> (a -> [a]) -> a -> [a]
-iterateList 0 _ x = [x]
-iterateList n f x = f x >>= iterateList (n - 1) f
-
-withoutI :: Int -> [a] -> [a]
-withoutI i list = take i list ++ drop (i + 1) list
-
 withoutN :: Int -> [a] -> Int -> RandIO [a]
 withoutN 0 list _   = return list
 withoutN n list len = do
     i <- getRandomR (0, len - 1)
     withoutN (n - 1) (withoutI i list) (len - 1)
-
-removeUniformly :: Int -> [a] -> Int -> [a]
-removeUniformly n list len = concatMap tail $ chunksOf ((len - 1) `div` n + 1) list
 
 without :: Int -> [a] -> Source RandIO [a]
 without n list = do
@@ -80,7 +72,7 @@ logger ag = do
     maybeGen <- await
     case maybeGen of
         Just gen -> do
-            liftIO $ print (i, fitness $ head gen)
+            liftIO $ print (i, fitness $ maximum gen)
             -- when (i `mod` 10 == 0) $ lift $ renderGen ag (show i) gen
             yield gen
             logger ag
@@ -88,6 +80,12 @@ logger ag = do
 
 renderGen :: ArtGallery -> String -> Configuration -> RandIO ()
 renderGen ag path conf = liftIO $ renderConfiguration ag conf ("out/" ++ path ++ ".png")
+
+nubOrdBy :: (a -> a -> Ordering) -> [a] -> [a]
+nubOrdBy f l = map head $ groupBy (\x y -> f x y == EQ) $ sortBy f l
+
+filterSameAndDead :: [Evaluated Configuration] -> [Evaluated Configuration]
+filterSameAndDead = nubOrdBy (comparing unit) . filter ((/= 0) . fitness)
 
 optimize :: Int -> Int -> ArtGallery -> Configuration -> RandIO Configuration
 optimize initSize cams ag conf = do
@@ -99,10 +97,11 @@ optimize initSize cams ag conf = do
              $$  Cond.sinkList
 
     let env = Environment { initial  = return confs
-                          , mutate   = mutateConf
-                          , cross    = crossConf
+                          , mutate   = applyM 1 mutateConf
+                          , cross    = crossConf (initSize `div` 10)
                           , evaluate = evaluateConf ag
-                          , maxScore = 1 }
+                          , maxScore = 1
+                          , filter'  = return . filterSameAndDead }
     res :: Maybe [Evaluated Configuration] <-
         runGenerations env =$= logger ag =$= Cond.take 100 $$ Cond.find ((>= 0.99) . fitness . head)
     case res of
@@ -113,8 +112,8 @@ optimize initSize cams ag conf = do
             liftIO $ putStrLn (show nowCams ++ " cams")
             if nowCams > 1 then optimize initSize (cams - toRemove) ag bestConf
             else do
-                renderGen ag ("sol" ++ show nowCams) bestConf
+                -- renderGen ag ("sol" ++ show nowCams) bestConf
                 return bestConf
         Nothing -> do
-            renderGen ag ("sol" ++ show cams) conf
+            -- renderGen ag ("sol" ++ show cams) conf
             return conf
