@@ -14,4 +14,5 @@ setup = Environment { initial  = take 10 <$> Rand.getRandoms
                                             ey <- eval y
                                             return $! (ex * x + ey * y) / (ex + ey)
                     , evaluate = eval
-                    , maxScore = 10000 }
+                    , maxScore = 10000
+                    , filter'  = return}

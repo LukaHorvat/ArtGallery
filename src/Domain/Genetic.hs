@@ -62,8 +62,9 @@ without' n list len = do
     lift (withoutN n list len) >>= yield
     without' n list len
 
-runGallery :: ArtGallery -> RandIO Configuration
-runGallery ag@(ArtGallery poly) = optimize (size poly) (size poly) ag (initialConfiguration ag)
+runGallery :: Double -> ArtGallery -> RandIO Configuration
+runGallery prec ag@(ArtGallery poly) =
+    optimize prec (size poly) (size poly) ag (initialConfiguration ag)
 
 logger :: ArtGallery -> Conduit [Evaluated Configuration] RandIO [Evaluated Configuration]
 logger ag = do
@@ -87,8 +88,8 @@ nubOrdBy f l = map head $ groupBy (\x y -> f x y == EQ) $ sortBy f l
 filterSameAndDead :: [Evaluated Configuration] -> [Evaluated Configuration]
 filterSameAndDead = nubOrdBy (comparing unit) . filter ((/= 0) . fitness)
 
-optimize :: Int -> Int -> ArtGallery -> Configuration -> RandIO Configuration
-optimize initSize cams ag conf = do
+optimize :: Double -> Int -> Int -> ArtGallery -> Configuration -> RandIO Configuration
+optimize prec initSize cams ag conf = do
     let toRemove = max 1 $ (cams - floor (fromIntegral initSize * (2 / 5 :: Double))) `div` 10
     let nowCams = cams - toRemove
     confs <- without toRemove (coerce conf :: [Camera])
@@ -103,17 +104,17 @@ optimize initSize cams ag conf = do
                           , maxScore = 1
                           , filter'  = return . filterSameAndDead }
     res :: Maybe [Evaluated Configuration] <-
-        runGenerations env =$= logger ag =$= Cond.take 100 $$ Cond.find ((>= 0.99) . fitness . head)
+        runGenerations env =$= logger ag =$= Cond.take 100 $$ Cond.find ((>= prec) . fitness . head)
     case res of
         Just evals -> do
             let bestConf = unit (head evals)
             -- when (cams `mod` 10 == 0) $ renderGen ag ("sol" ++ show nowCams) bestConf
             liftIO $ putStrLn "Run done"
             liftIO $ putStrLn (show nowCams ++ " cams")
-            if nowCams > 1 then optimize initSize (cams - toRemove) ag bestConf
+            if nowCams > 1 then optimize prec initSize (cams - toRemove) ag bestConf
             else do
-                -- renderGen ag ("sol" ++ show nowCams) bestConf
+                renderGen ag ("sol" ++ show nowCams) bestConf
                 return bestConf
         Nothing -> do
-            -- renderGen ag ("sol" ++ show cams) conf
+            renderGen ag ("sol" ++ show cams) conf
             return conf

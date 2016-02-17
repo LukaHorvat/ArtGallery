@@ -31,7 +31,6 @@ executable ArtGallery
                      , Geometry.Point
                      , Geometry.Polygon
                      , Geometry.Visibility
-                     , Stream
                      , Visualization
   -- other-extensions:
   build-depends:       base

@@ -39,12 +39,21 @@ main = do
     (res, out) <- case args of
         [gal, out] -> do
             poly <- makeArtGallery <$> polygonFromFile gal
-            res <- runRandIO $ runGallery poly
+            res <- runRandIO $ runGallery 0.99 poly
             return (res, out)
         [gal, cams, out] -> do
             poly <- makeArtGallery <$> polygonFromFile gal
             cams <- camerasFromFile cams
-            res <- runRandIO $ optimize (size (coerce poly)) (length cams) poly (coerce cams)
+            res <- runRandIO $ optimize 0.99 (size (coerce poly)) (length cams) poly (coerce cams)
+            return (res, out)
+        [gal, cams, out, prec] -> do
+            poly <- makeArtGallery <$> polygonFromFile gal
+            cams <- camerasFromFile cams
+            res <- runRandIO $ optimize (read prec)
+                                        (size (coerce poly))
+                                        (length cams)
+                                        poly
+                                        (coerce cams)
             return (res, out)
         _ -> do
             putStrLn "Usage: ./ArtGallery <polygon file> [starting cameras] <output file>"
